@@ -6,9 +6,10 @@
 secure data such as keytabs. Wallet contains support for
 [Stanford's NetDB][2] but I neither need nor want NetDB (if
 only because it requires an Oracle database; see also 
-"Is NetDB right for me?"). This program
-is a "shim" to emulate NetDB support in Wallet. (tenDB is a
-half-cocked attempt at reversing the word NetDB.)
+"[Is NetDB right for me?][2]"). This program
+is a "shim" to emulate NetDB support in Wallet.
+
+(tenDB is a half-cocked attempt at reversing the word NetDB.)
 
 ## wallet-backend and LDAP
 
@@ -26,10 +27,14 @@ sake, let's look at a simple LDAP schema:
 	host: test.example.net
 	host: workstation2.example.net
 
-`uid` is the ACL _instance_ we're interested in, and the
-`host` attribute type contains the host permitted by the ACL.
+`uid` is the ACL _instance_ we're interested in in the `netdb` ACL scheme, and the
+`host` attribute type contains the host principal authorized by the ACL.
 If the host invoking Wallet client is contained in the 
-LDAP entry for the ACL instance `acc01', it is authorized.
+LDAP entry for the ACL instance `acc01', using an LDAP filter like
+
+	(&(objectClass=account)(uid=%s)(host=%s))
+
+then the host is authorized.
 
 ## How this works
 
@@ -37,8 +42,7 @@ Add an [ACL to Wallet](http://www.eyrie.org/~eagle/software/wallet/api/acl.html)
 
 	wallet acl add aclname netdb acc01
 
-Wallet will invoke this program via _remctld_ (I've described this
-[here](http://jpmens.net/2012/06/04/remctl-run-commands-on-remote-hosts-using-kerberos-authentication/).) If this program
+Wallet will invoke this program via _remctld_ (I've [discussed _remctl_ here](http://jpmens.net/2012/06/04/remctl-run-commands-on-remote-hosts-using-kerberos-authentication/).) If this program
 exits with a status != 0, Wallet considers the ACL has not matched.
 Otherwise, if it returns a string "user", "team", or "admin" 
 (all of which are equivalent) the ACL matches.
@@ -62,14 +66,14 @@ In Wallet's `wallet.conf`, configure
 	$NETDB_REMCTL_CACHE     = '/etc/wallet/tenDB.ccache';
 
 
-This program will be invoked with three (3) arguments:
+_tenDB.pl_ will be invoked with three (3) arguments:
 
 1. The string "node-roles"
 2. The principal name with which the Wallet client has authenticated;
    in this particular case, I'm interested in host/ principals only
    and will not authorize anything else. Change as needed.
-   Note if Wallet has been configured with a `$NETDB_REALM' (in
-   wallet.conf) that the specified realm will be stripped from the
+   If Wallet has been configured with a `$NETDB_REALM' (in
+   wallet.conf), then the specified realm will be stripped from the
    principal name. In other words:
    "@REALM" is stripped from argv[2] if
 	$NETDB_REALM            = 'REALM';
@@ -77,7 +81,7 @@ This program will be invoked with three (3) arguments:
 3. The ACL "instance" for scheme "netdb". Suppose you've added
    an acl
 	wallet acl add aclname netdb acc01
-   the "instance" is `acc01'.
+   then the "instance" is `acc01'.
 
 As this program is invoked by remctld, it has access to the
 following environment variables:
@@ -87,7 +91,7 @@ following environment variables:
 	REMCTL_COMMAND=netdb
 	REMOTE_ADDR=192.168.1.1
 
-Wallet expects this program to answer as if NetDB where replying, in other
+Wallet-backend expects this program to answer as if NetDB where replying, in other
 words, if we find a single corresponding entry in LDAP (or whatever other
 data store we're querying) we return the string "user" and exit with 0.
 
