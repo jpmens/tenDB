@@ -95,7 +95,12 @@ Wallet-backend expects this program to answer as if NetDB where replying, in oth
 words, if we find a single corresponding entry in LDAP (or whatever other
 data store we're querying) we return the string "user" and exit with 0.
 
+I mentioned it in a comment above: remember that `$NETDB_REMCTL_CACHE` must
+be initialized and the keys therein must be renewed periodically. I suggest using
+Russ Alberry's [k5start][4] for that.
+
   [1]: http://www.eyrie.org/~eagle/software/wallet/
   [2]: http://www.stanford.edu/group/networking/netdb/
   [3]: http://git.eyrie.org/?p=kerberos/wallet.git
+  [4]: http://www.eyrie.org/~eagle/software/kstart/k5start.html
 
